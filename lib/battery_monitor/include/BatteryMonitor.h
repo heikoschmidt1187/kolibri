@@ -6,7 +6,9 @@
 class BatteryMonitor
 {
 public:
-    BatteryMonitor(uint8_t inputPin, uint8_t resolution_bits, uint8_t voltage_divider_ratio);
+    BatteryMonitor(const uint8_t inputPin,
+                   const uint8_t resolution_bits,
+                   const uint8_t voltage_divider_ratio);
     float process();
 
 private:
