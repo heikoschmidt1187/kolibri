@@ -27,6 +27,35 @@ void Gyroscope::Init()
     Wire.write(0x1BU);
     Wire.write(0x08U);
     Wire.endTransmission();
+
+    // calibrate the offsets by taking a large number of measurements and take
+    // the average
+    float offsetRoll = 0.F;
+    float offsetPitch = 0.F;
+    float offsetYaw = 0.F;
+
+    for (auto i = 0U; i < CALIBRATION_MEASURMENTS; ++i)
+    {
+        Process();
+
+        offsetRoll += rateRoll;
+        offsetPitch += ratePitch;
+        offsetYaw += rateYaw;
+
+        delay(1U);
+    }
+
+    calibrationOffsetRoll = offsetRoll / CALIBRATION_MEASURMENTS;
+    calibrationOffsetPitch = offsetPitch / CALIBRATION_MEASURMENTS;
+    calibrationOffsetYaw = offsetYaw / CALIBRATION_MEASURMENTS;
+
+    // correct last measurement
+    rateRoll -= calibrationOffsetRoll;
+    ratePitch -= calibrationOffsetPitch;
+    rateYaw -= calibrationOffsetYaw;
+
+    Serial.printf("Gyro calibration offsets = Roll: %f °/s | Pitch: %f °/s | Yaw: %f °/s\n",
+                  calibrationOffsetRoll, calibrationOffsetPitch, calibrationOffsetYaw);
 }
 
 void Gyroscope::Process()
@@ -42,7 +71,7 @@ void Gyroscope::Process()
     int16_t gyroY = (Wire.read() << 8U) | Wire.read();
     int16_t gyroZ = (Wire.read() << 8U) | Wire.read();
 
-    rateRoll = (float)gyroX / SCALE;
-    ratePitch = (float)gyroY / SCALE;
-    rateYaw = (float)gyroZ / SCALE;
+    rateRoll = ((float)gyroX / SCALE) - calibrationOffsetRoll;
+    ratePitch = ((float)gyroY / SCALE) - calibrationOffsetPitch;
+    rateYaw = ((float)gyroZ / SCALE) - calibrationOffsetYaw;
 }
