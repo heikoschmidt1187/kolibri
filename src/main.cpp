@@ -12,12 +12,19 @@
 
 #define SERIAL_BAUDRATE 57600L
 
+#define VERSION "0.1"
+
 BatteryMonitor batteryMonitor(BATTERY_VOLTAGE_INPUT_PIN,
                               BATTERY_VOLTAGE_INPUT_RESOLUTION_BITS,
                               BATTERY_VOLTAGE_DIVIDER_RATIO);
 
 void setup()
 {
+    // configure serial monitor
+    Serial.begin(SERIAL_BAUDRATE);
+    Serial.println("Welcome to Kolibri v" VERSION);
+    Serial.println("=======================");
+
     // configure LED pins
     pinMode(INTERNAL_LED_GPIO, OUTPUT);
     pinMode(RED_LED_GPIO, OUTPUT);
@@ -27,9 +34,6 @@ void setup()
     digitalWrite(INTERNAL_LED_GPIO, HIGH);
     digitalWrite(RED_LED_GPIO, HIGH);
     digitalWrite(GREE_LED_GPIO, LOW);
-
-    // configure serial monitor
-    Serial.begin(SERIAL_BAUDRATE);
 
     // TODO: perform initialization
     delay(4000U);
