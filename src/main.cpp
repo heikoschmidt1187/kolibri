@@ -43,5 +43,5 @@ void loop()
 {
     auto voltage = batteryMonitor.process();
     Serial.printf("Battery Voltage: %f\n", voltage);
-    delay(50U);
+    delay(1000U);
 }
