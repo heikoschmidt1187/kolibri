@@ -3,6 +3,10 @@
 
 #include <BatteryMonitor.h>
 #include <Gyroscope.h>
+#include <Receiver.h>
+
+#define MAX_RECEIVER_CHANNELS 10U
+#define RECEIVER_PIN 14U
 
 #define INTERNAL_LED_GPIO 13U
 #define RED_LED_GPIO 5U
@@ -23,6 +27,7 @@ BatteryMonitor batteryMonitor(BATTERY_VOLTAGE_INPUT_PIN,
                               BATTERY_VOLTAGE_INPUT_RESOLUTION_BITS,
                               BATTERY_VOLTAGE_DIVIDER_RATIO);
 Gyroscope gyroscope(MCP6050_BUS_ID);
+Receiver receiver(RECEIVER_PIN);
 
 void setup()
 {
@@ -49,6 +54,9 @@ void setup()
     // init Gyro
     gyroscope.Init();
 
+    // init receiver
+    receiver.Init();
+
     // signal end of setup
     digitalWrite(RED_LED_GPIO, LOW);
     digitalWrite(GREE_LED_GPIO, HIGH);
@@ -64,5 +72,11 @@ void loop()
     gyroscope.Process();
     Serial.printf("Roll-Rate: %f °/s | Pitch-Rate: %f °/s | Yaw-Rate: %f °/s\n",
                   gyroscope.GetRollRate(), gyroscope.GetPitchRate(), gyroscope.GetYawRate());
+
+    // check channel values
+    receiver.Process();
+    for (auto i = 0; i < receiver.GetActualChannelCount(); ++i)
+        Serial.printf("Channel %d: %f\n", i, receiver.GetChannelValue(i));
+
     delay(50);
 }
