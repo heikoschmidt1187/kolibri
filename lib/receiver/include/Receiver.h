@@ -18,9 +18,9 @@ public:
 private:
     static constexpr auto MAX_CHANNELS = 10U;
 
-    PulsePositionInput input;
-
     uint8_t ppmPin;
+
+    PulsePositionInput input;
     uint8_t actualChannelCount = 0U;
 
     float channelValues[MAX_CHANNELS];
