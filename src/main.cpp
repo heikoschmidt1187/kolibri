@@ -5,29 +5,20 @@
 #include <Gyroscope.h>
 #include <Receiver.h>
 
-#define MAX_RECEIVER_CHANNELS 10U
-#define RECEIVER_PIN 14U
-
-#define INTERNAL_LED_GPIO 13U
-#define RED_LED_GPIO 5U
-#define GREEN_LED_GPIO 6U
-
-#define BATTERY_VOLTAGE_INPUT_PIN 15U
-#define BATTERY_VOLTAGE_INPUT_RESOLUTION_BITS 10U
-#define BATTERY_VOLTAGE_DIVIDER_RATIO 5U
-
-#define I2C_FREQ_IN_HZ 400000U
-
-#define SERIAL_BAUDRATE 57600L
-#define MCP6050_BUS_ID 0x68U
-
-#define VERSION "0.1"
+#include <config.h>
 
 BatteryMonitor batteryMonitor(BATTERY_VOLTAGE_INPUT_PIN,
-                              BATTERY_VOLTAGE_INPUT_RESOLUTION_BITS,
-                              BATTERY_VOLTAGE_DIVIDER_RATIO);
+                              BATTERY_CURRENT_INPUT_PIN,
+                              ADC_INPUT_RESOLUTION_BITS,
+                              BATTERY_VOLTAGE_DIVIDER_RATIO,
+                              BATTERY_CURRENT_DIVIDER_RATIO,
+                              (float)CYCLE_TIME_MS / 1000.F);
 Gyroscope gyroscope(MCP6050_BUS_ID);
 Receiver receiver(RECEIVER_PIN);
+
+static bool batteryLow = false;
+static uint16_t batteryLowBlinkCtr = 0U;
+static auto batteryLowCurOutput = LOW;
 
 void setup()
 {
@@ -57,26 +48,46 @@ void setup()
     // init receiver
     receiver.Init();
 
+    // init battery monitor
+    if (batteryMonitor.Init() == BatteryMonitor::BatteryLevel::BAT_LOW)
+        batteryLow = true;
+
     // signal end of setup
-    digitalWrite(RED_LED_GPIO, LOW);
+    if (!batteryLow)
+        digitalWrite(RED_LED_GPIO, LOW);
+
     digitalWrite(GREEN_LED_GPIO, HIGH);
 }
 
 void loop()
 {
-    // check voltage
-    auto voltage = batteryMonitor.process();
-    Serial.printf("Battery Voltage: %f\n", voltage);
+    // check battery and visualize
+    auto level = batteryMonitor.Process();
+    if (batteryLow)
+    {
+        if (batteryLowBlinkCtr == 0U)
+        {
+            batteryLowBlinkCtr = 500U / CYCLE_TIME_MS;
+            batteryLowCurOutput = batteryLowCurOutput == HIGH ? LOW : HIGH;
+        }
+        batteryLowBlinkCtr--;
+        digitalWrite(RED_LED_GPIO, batteryLowCurOutput);
+    }
+    else
+    {
+        batteryLow = (level == BatteryMonitor::BAT_LOW);
+    }
 
     // check rates
     gyroscope.Process();
-    Serial.printf("Roll-Rate: %f °/s | Pitch-Rate: %f °/s | Yaw-Rate: %f °/s\n",
-                  gyroscope.GetRollRate(), gyroscope.GetPitchRate(), gyroscope.GetYawRate());
+    // Serial.printf("Roll-Rate: %f °/s | Pitch-Rate: %f °/s | Yaw-Rate: %f °/s\n",
+    // gyroscope.GetRollRate(), gyroscope.GetPitchRate(), gyroscope.GetYawRate());
 
     // check channel values
-    // receiver.Process();
+    receiver.Process();
     // for (auto i = 0; i < receiver.GetActualChannelCount(); ++i)
     // Serial.printf("Channel %d: %f\n", i, receiver.GetChannelValue(i));
 
-    delay(50);
+    // TODO: use cycle taking calculation into consideration
+    delay(4);
 }

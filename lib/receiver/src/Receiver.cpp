@@ -15,7 +15,7 @@ void Receiver::Process()
 {
     actualChannelCount = input.available();
 
-    for (auto i = 0; (i < actualChannelCount) && (i < MAX_CHANNELS); ++i)
+    for (auto i = 0U; (i < actualChannelCount) && (i < MAX_CHANNELS); ++i)
         channelValues[i] = input.read(i + 1); // 1-based
 }
 
