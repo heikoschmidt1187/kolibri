@@ -19,6 +19,9 @@ public:
 				 const uint8_t outputPinRR, const uint8_t outputPinRL,
 				 const uint8_t outputPinFL);
 	void Init();
+	void Process();
+
+	void SetThrottle(Motor motor, float throttle);
 
 private:
 	uint16_t escFreqHz;

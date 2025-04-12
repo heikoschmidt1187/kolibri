@@ -13,6 +13,21 @@ MotorManager::MotorManager(const uint16_t escFreqHz, const uint8_t outputPinFR,
 
 void MotorManager::Init()
 {
-	for (auto i = 0U; i < MOT_NoOf; ++i)
+	for (auto i = 0U; i < MOT_NoOf; ++i) {
 		analogWriteFrequency(outputPins[i], escFreqHz);
+		analogWriteResolution(12U);
+	}
+}
+
+void MotorManager::Process()
+{
+	Serial.printf("Throttle for FR: %f\n", throttle[MOT_FR]);
+
+	for (auto i = 0U; i < MOT_NoOf; ++i)
+		analogWrite(outputPins[i], (int)(1024U * throttle[i]));
+}
+
+void MotorManager::SetThrottle(Motor motor, float throttle)
+{
+	this->throttle[motor] = throttle;
 }

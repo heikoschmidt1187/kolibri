@@ -22,6 +22,7 @@ MotorManager motorManager(ESC_INPUT_FREQ_HZ, MOTOR_FR_PIN, MOTOR_RR_PIN,
 static bool batteryLow = false;
 static uint16_t batteryLowBlinkCtr = 0U;
 static auto batteryLowCurOutput = LOW;
+static bool throttleRequestActive = false;
 
 void setup()
 {
@@ -88,9 +89,23 @@ void loop()
 
 	// check channel values
 	receiver.Process();
-	// for (auto i = 0; i < receiver.GetActualChannelCount(); ++i)
-	// Serial.printf("Channel %d: %f\n", i, receiver.GetChannelValue(i));
+
+	if (receiver.GetActualChannelCount() >= 3) {
+		auto throttleRequest = receiver.GetChannelValue(2);
+
+		// wait until the throttle stick has been moved around it's lower position
+		// to avoid unintended rotor movement
+		if (!throttleRequestActive && (throttleRequest > 1020.F) &&
+			(throttleRequest < 1050.F))
+			throttleRequestActive = true;
+
+		motorManager.SetThrottle(MotorManager::MOT_FR,
+								 throttleRequestActive ? throttleRequest : 0.F);
+	}
+
+	// update drives
+	motorManager.Process();
 
 	// TODO: use cycle taking calculation into consideration
-	delay(4);
+	delay(100);
 }
