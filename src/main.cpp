@@ -5,6 +5,7 @@
 #include <Gyroscope.h>
 #include <Receiver.h>
 #include <MotorManager.h>
+#include <RateController.h>
 
 #include <config.h>
 
@@ -14,15 +15,68 @@ BatteryMonitor batteryMonitor(BATTERY_VOLTAGE_INPUT_PIN,
 							  BATTERY_VOLTAGE_DIVIDER_RATIO,
 							  BATTERY_CURRENT_DIVIDER_RATIO,
 							  (float)CYCLE_TIME_MS / 1000.F);
+
 Gyroscope gyroscope(MCP6050_BUS_ID);
 Receiver receiver(RECEIVER_PIN);
 MotorManager motorManager(ESC_INPUT_FREQ_HZ, MOTOR_FR_PIN, MOTOR_RR_PIN,
 						  MOTOR_RL_PIN, MOTOR_FL_PIN);
 
-static bool batteryLow = false;
+RateController rateController;
+
+// battery level handling
 static uint16_t batteryLowBlinkCtr = 0U;
+static bool batteryLow = false;
 static auto batteryLowCurOutput = LOW;
-static bool throttleRequestActive = false;
+
+// throttle safety handling
+static bool validThrottleCommandSeen = false;
+
+void HandleBattery()
+{
+	// check battery and visualize
+	auto level = batteryMonitor.Process();
+	if (batteryLow) {
+		if (batteryLowBlinkCtr == 0U) {
+			batteryLowBlinkCtr = 500U / CYCLE_TIME_MS;
+			batteryLowCurOutput = batteryLowCurOutput == HIGH ? LOW : HIGH;
+		}
+		batteryLowBlinkCtr--;
+		digitalWrite(RED_LED_GPIO, batteryLowCurOutput);
+	} else {
+		batteryLow = (level == BatteryMonitor::BAT_LOW);
+	}
+}
+
+void HandleRateController()
+{
+	// determine user inputs with throttle safety
+	float throttleReq = 0.F;
+
+	float rollReq = 0.F;
+	float pitchReq = 0.F;
+	float yawReq = 0.F;
+
+	if (receiver.GetActualChannelCount() >= 4) {
+		auto throttle = receiver.GetChannelValue(2U);
+
+		// wait until the throttle stick has been moved around it's lower position
+		// to avoid unintended rotor movement
+		if (!validThrottleCommandSeen && (throttle > 1020.F) &&
+			(throttle < 1050.F))
+			validThrottleCommandSeen = true;
+
+		throttleReq = validThrottleCommandSeen ? throttle : 0.F;
+
+		rollReq = receiver.GetChannelValue(0U);
+		pitchReq = receiver.GetChannelValue(1U);
+		yawReq = receiver.GetChannelValue(3U);
+
+	} else {
+		// TODO: lost connection to controller, activate safety routine
+	}
+
+	rateController.Process(throttleReq, rollReq, pitchReq, yawReq);
+}
 
 void setup()
 {
@@ -46,7 +100,7 @@ void setup()
 	Wire.begin();
 	delay(250U);
 
-	// init Gyro
+	// init gyro
 	gyroscope.Init();
 
 	// init receiver
@@ -59,6 +113,9 @@ void setup()
 	// init motor manager
 	motorManager.Init();
 
+	// init rate controller
+	rateController.Init();
+
 	// signal end of setup
 	if (!batteryLow)
 		digitalWrite(RED_LED_GPIO, LOW);
@@ -68,42 +125,16 @@ void setup()
 
 void loop()
 {
-	// check battery and visualize
-	auto level = batteryMonitor.Process();
-	if (batteryLow) {
-		if (batteryLowBlinkCtr == 0U) {
-			batteryLowBlinkCtr = 500U / CYCLE_TIME_MS;
-			batteryLowCurOutput = batteryLowCurOutput == HIGH ? LOW : HIGH;
-		}
-		batteryLowBlinkCtr--;
-		digitalWrite(RED_LED_GPIO, batteryLowCurOutput);
-	} else {
-		batteryLow = (level == BatteryMonitor::BAT_LOW);
-	}
+	HandleBattery();
 
-	// check rates
-	gyroscope.Process();
-	Serial.printf("Roll-Rate: %f °/s | Pitch-Rate: %f °/s | Yaw-Rate: %f °/s\n",
-				  gyroscope.GetRollRate(), gyroscope.GetPitchRate(),
-				  gyroscope.GetYawRate());
-
-	// check channel values
+	// get system input
 	receiver.Process();
+	gyroscope.Process();
 
-	if (receiver.GetActualChannelCount() >= 3) {
-		auto throttleRequest = receiver.GetChannelValue(2);
+	// logic depends on controller
+	HandleRateController();
 
-		// wait until the throttle stick has been moved around it's lower position
-		// to avoid unintended rotor movement
-		if (!throttleRequestActive && (throttleRequest > 1020.F) &&
-			(throttleRequest < 1050.F))
-			throttleRequestActive = true;
-
-		motorManager.SetThrottle(MotorManager::MOT_FR,
-								 throttleRequestActive ? throttleRequest : 0.F);
-	}
-
-	// update drives
+	// set actuators
 	motorManager.Process();
 
 	// TODO: use cycle taking calculation into consideration

@@ -21,8 +21,6 @@ void MotorManager::Init()
 
 void MotorManager::Process()
 {
-	Serial.printf("Throttle for FR: %f\n", throttle[MOT_FR]);
-
 	for (auto i = 0U; i < MOT_NoOf; ++i)
 		analogWrite(outputPins[i], (int)(1024U * throttle[i]));
 }
