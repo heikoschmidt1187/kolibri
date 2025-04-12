@@ -32,4 +32,11 @@
 // UART config
 #define SERIAL_BAUDRATE 57600L
 
+// Motor controllers
+#define ESC_INPUT_FREQ_HZ 250U
+#define MOTOR_FR_PIN 1U
+#define MOTOR_RR_PIN 2U
+#define MOTOR_RL_PIN 3U
+#define MOTOR_FL_PIN 4U
+
 #endif /* CONFIG_H_ */
