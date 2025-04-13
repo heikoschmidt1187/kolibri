@@ -21,7 +21,7 @@ Receiver receiver(RECEIVER_PIN);
 MotorManager motorManager(ESC_INPUT_FREQ_HZ, MOTOR_FR_PIN, MOTOR_RR_PIN,
 						  MOTOR_RL_PIN, MOTOR_FL_PIN);
 
-RateController rateController;
+RateController rateController((float)CYCLE_TIME_MS / 1000.F);
 
 // battery level handling
 static uint16_t batteryLowBlinkCtr = 0U;
@@ -30,6 +30,12 @@ static auto batteryLowCurOutput = LOW;
 
 // throttle safety handling
 static bool validThrottleCommandSeen = false;
+
+// precision loop timing
+static uint32_t loopTimer = 0U;
+
+// receiver disconnect detection
+static uint32_t lastReceiverTimestamp = 0U;
 
 void HandleBattery()
 {
@@ -50,14 +56,17 @@ void HandleBattery()
 void HandleRateController()
 {
 	// determine user inputs with throttle safety
-	float throttleReq = 0.F;
+	static float throttleReq = 0.F;
 
-	float rollReq = 0.F;
-	float pitchReq = 0.F;
-	float yawReq = 0.F;
+	static float rollReq = 0.F;
+	static float pitchReq = 0.F;
+	static float yawReq = 0.F;
 
-	if (receiver.GetActualChannelCount() >= 4) {
-		auto throttle = receiver.GetChannelValue(2U);
+	static bool loggedReceiverFallback = false;
+	static bool emergencyRoutineActivated = false;
+
+	if (receiver.GetActualChannelCount() >= 8) {
+		auto throttle = receiver.GetChannelValue(CHANNEL_THROTTLE);
 
 		// wait until the throttle stick has been moved around it's lower position
 		// to avoid unintended rotor movement
@@ -67,15 +76,49 @@ void HandleRateController()
 
 		throttleReq = validThrottleCommandSeen ? throttle : 0.F;
 
-		rollReq = receiver.GetChannelValue(0U);
-		pitchReq = receiver.GetChannelValue(1U);
-		yawReq = receiver.GetChannelValue(3U);
+		rollReq = receiver.GetChannelValue(CHANNEL_ROLL);
+		pitchReq = receiver.GetChannelValue(CHANNEL_PITCH);
+		yawReq = receiver.GetChannelValue(CHANNEL_YAW);
 
+		// check the emergency switch
+		auto emergencyInput =
+			receiver.GetChannelValue(CHANNEL_SWITCH_EMERGENCY);
+
+		if ((emergencyInput > RateController::USER_INPUT_MID) &&
+			!emergencyRoutineActivated) {
+			Serial.printf("Connection lost, emergency activated!\n");
+			emergencyRoutineActivated = true;
+		}
+
+		lastReceiverTimestamp = micros();
+		loggedReceiverFallback = false;
+
+	} else if (validThrottleCommandSeen) {
+		// TODO: lost receiver during flight
+		// for now: keep turning at idle and hope the best
+		if (validThrottleCommandSeen &&
+			(micros() - lastReceiverTimestamp > RECVR_DISCONNECT_TIMEOUT_US)) {
+			if (!loggedReceiverFallback) {
+				Serial.printf("Receiver failed, fallback activated!\n");
+				loggedReceiverFallback = true;
+			}
+		} else {
+			loggedReceiverFallback = false;
+		}
 	} else {
-		// TODO: lost connection to controller, activate safety routine
+		// nothing to do, wait for commands
 	}
 
-	rateController.Process(throttleReq, rollReq, pitchReq, yawReq);
+	// handle emergency
+	if (emergencyRoutineActivated || loggedReceiverFallback) {
+		throttleReq = RateController::USER_THROTTLE_IDLE;
+		rollReq = RateController::USER_INPUT_MID;
+		pitchReq = RateController::USER_INPUT_MID;
+		yawReq = RateController::USER_INPUT_MID;
+	}
+
+	rateController.Process(gyroscope, motorManager, throttleReq, rollReq,
+						   pitchReq, yawReq);
 }
 
 void setup()
@@ -121,6 +164,9 @@ void setup()
 		digitalWrite(RED_LED_GPIO, LOW);
 
 	digitalWrite(GREEN_LED_GPIO, HIGH);
+
+	loopTimer = micros();
+	lastReceiverTimestamp = micros();
 }
 
 void loop()
@@ -137,6 +183,14 @@ void loop()
 	// set actuators
 	motorManager.Process();
 
-	// TODO: use cycle taking calculation into consideration
-	delay(100);
+	// cross check if we're still in target
+	auto diff = micros() - loopTimer;
+	if ((micros() - loopTimer) > CYCLE_TIME_US)
+		Serial.printf("Time limit exceeded! %llu us\n", diff);
+
+	// wait until loop is finished
+	while (diff < CYCLE_TIME_US)
+		diff = micros() - loopTimer;
+
+	loopTimer = micros();
 }

@@ -29,3 +29,8 @@ void MotorManager::SetThrottle(Motor motor, float throttle)
 {
 	this->throttle[motor] = throttle;
 }
+
+void MotorManager::SetThrottle(const float throttle[MOT_NoOf])
+{
+	memcpy(&this->throttle[0], throttle, sizeof(this->throttle));
+}

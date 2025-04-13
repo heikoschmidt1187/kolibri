@@ -5,6 +5,7 @@
 #define VERSION "0.1"
 
 #define CYCLE_TIME_MS 4U
+#define CYCLE_TIME_US (CYCLE_TIME_MS * 1000U)
 
 // on-board LEDs
 #define INTERNAL_LED_GPIO 13U
@@ -14,6 +15,12 @@
 // controller receiver
 #define MAX_RECEIVER_CHANNELS 10U
 #define RECEIVER_PIN 14U
+
+#define CHANNEL_ROLL 0U
+#define CHANNEL_PITCH 1U
+#define CHANNEL_THROTTLE 2U
+#define CHANNEL_YAW 3U
+#define CHANNEL_SWITCH_EMERGENCY 7U
 
 // voltage measurement
 #define ADC_INPUT_RESOLUTION_BITS 10U
@@ -38,5 +45,9 @@
 #define MOTOR_RR_PIN 2U
 #define MOTOR_RL_PIN 3U
 #define MOTOR_FL_PIN 4U
+
+// Safety features
+#define RECVR_DISCONNECT_TIMEOUT_MS 500U
+#define RECVR_DISCONNECT_TIMEOUT_US (RECVR_DISCONNECT_TIMEOUT_MS * 1000U)
 
 #endif /* CONFIG_H_ */

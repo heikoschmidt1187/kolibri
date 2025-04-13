@@ -22,6 +22,7 @@ public:
 	void Process();
 
 	void SetThrottle(Motor motor, float throttle);
+	void SetThrottle(const float throttle[MOT_NoOf]);
 
 private:
 	uint16_t escFreqHz;
