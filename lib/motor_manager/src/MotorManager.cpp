@@ -8,7 +8,7 @@ MotorManager::MotorManager(const uint16_t escFreqHz, const uint8_t outputPinFR,
 	outputPins[MOT_FR] = outputPinFR;
 	outputPins[MOT_RR] = outputPinRR;
 	outputPins[MOT_RL] = outputPinRL;
-	outputPins[MOT_RR] = outputPinRR;
+	outputPins[MOT_FL] = outputPinFL;
 }
 
 void MotorManager::Init()
