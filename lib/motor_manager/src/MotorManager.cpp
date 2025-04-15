@@ -13,24 +13,26 @@ MotorManager::MotorManager(const uint16_t escFreqHz, const uint8_t outputPinFR,
 
 void MotorManager::Init()
 {
+	analogWriteResolution(12U);
 	for (auto i = 0U; i < MOT_NoOf; ++i) {
 		analogWriteFrequency(outputPins[i], escFreqHz);
-		analogWriteResolution(12U);
+		analogWrite(i, 1.024F * 1000);
 	}
 }
 
 void MotorManager::Process()
 {
 	for (auto i = 0U; i < MOT_NoOf; ++i)
-		analogWrite(outputPins[i], (int)(1024U * throttle[i]));
+		analogWrite(outputPins[i], (int)(1.024F * throttle[i]));
 }
 
 void MotorManager::SetThrottle(Motor motor, float throttle)
 {
-	this->throttle[motor] = throttle;
+	this->throttle[motor] = max(throttle, 1000.F);
 }
 
 void MotorManager::SetThrottle(const float throttle[MOT_NoOf])
 {
-	memcpy(&this->throttle[0], throttle, sizeof(this->throttle));
+	for (auto i = 0U; i < MOT_NoOf; ++i)
+		SetThrottle(i, throttle[i]);
 }
