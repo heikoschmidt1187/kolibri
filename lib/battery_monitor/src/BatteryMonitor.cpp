@@ -1,5 +1,7 @@
 #include "BatteryMonitor.h"
 
+#include <DroneConfig.h>
+
 BatteryMonitor::BatteryMonitor(const uint8_t voltageMeasurementPin,
 							   const uint8_t currentMeasurementPin,
 							   const uint8_t resolutionBits,
@@ -52,9 +54,11 @@ BatteryMonitor::BatteryLevel BatteryMonitor::Process()
 		(capacityAtStart - consumedCapacity) / TOTAL_BATTERY_CAPACITY * 100;
 
 	if (statusLogCycleCtr == 0U) {
+#ifndef MEASRUEMENT_MODE
 		Serial.printf(
 			"Measured voltage: %f V | Measured current: %f A | Remaining capacity: %f %\n",
 			MeasureVoltage(), current, remaining);
+#endif
 		statusLogCycleCtr = (uint16_t)(5.F / cycleTimeS);
 	}
 	statusLogCycleCtr--;

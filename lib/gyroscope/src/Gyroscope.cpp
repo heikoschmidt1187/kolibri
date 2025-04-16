@@ -16,7 +16,7 @@ void Gyroscope::Init()
 	Wire.write(0x00U);
 	Wire.endTransmission();
 
-	// switch low pass filter to 10 Hz bandwith
+	//switch low pass filter to 10 Hz bandwith
 	Wire.beginTransmission(busId);
 	Wire.write(0x1AU);
 	Wire.write(0x05AU);
@@ -74,4 +74,6 @@ void Gyroscope::Process()
 	rateRoll = ((float)gyroX / SCALE) - calibrationOffsetRoll;
 	ratePitch = ((float)gyroY / SCALE) - calibrationOffsetPitch;
 	rateYaw = ((float)gyroZ / SCALE) - calibrationOffsetYaw;
+
+	Serial.printf("Gyro raw: R %f P %f Y %f\n", rateRoll, ratePitch, rateYaw);
 }

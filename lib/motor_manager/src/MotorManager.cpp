@@ -1,6 +1,6 @@
 #include <MotorManager.h>
 
-#define MEASUREMENT_MODE
+#include <DroneConfig.h>
 
 MotorManager::MotorManager(const uint16_t escFreqHz, const uint8_t outputPinFR,
 						   const uint8_t outputPinRR, const uint8_t outputPinRL,
@@ -24,6 +24,8 @@ void MotorManager::Init()
 
 void MotorManager::Process()
 {
+	Serial.printf("Throttle: %f\n ", throttle[0]);
+
 	for (auto i = 0U; i < MOT_NoOf; ++i)
 		analogWrite(outputPins[i], (int)(1.024F * throttle[i]));
 }

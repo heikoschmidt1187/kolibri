@@ -7,7 +7,7 @@
 #include <MotorManager.h>
 #include <RateController.h>
 
-#include <config.h>
+#include <DroneConfig.h>
 
 BatteryMonitor batteryMonitor(BATTERY_VOLTAGE_INPUT_PIN,
 							  BATTERY_CURRENT_INPUT_PIN,
