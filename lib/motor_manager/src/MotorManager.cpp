@@ -1,5 +1,7 @@
 #include <MotorManager.h>
 
+#define MEASUREMENT_MODE
+
 MotorManager::MotorManager(const uint16_t escFreqHz, const uint8_t outputPinFR,
 						   const uint8_t outputPinRR, const uint8_t outputPinRL,
 						   const uint8_t outputPinFL)
@@ -29,6 +31,10 @@ void MotorManager::Process()
 void MotorManager::SetThrottle(Motor motor, float throttle)
 {
 	this->throttle[motor] = max(throttle, 1000.F);
+
+#ifdef MEASUREMENT_MODE
+	this->throttle[motor] = min(throttle, 1180.F);
+#endif
 }
 
 void MotorManager::SetThrottle(const float throttle[MOT_NoOf])
