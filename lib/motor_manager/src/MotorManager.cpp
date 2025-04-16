@@ -18,7 +18,7 @@ void MotorManager::Init()
 	analogWriteResolution(12U);
 	for (auto i = 0U; i < MOT_NoOf; ++i) {
 		analogWriteFrequency(outputPins[i], escFreqHz);
-		analogWrite(i, 1.024F * 1000);
+		analogWrite(i, 1.024F * THROTTLE_OFF);
 	}
 }
 
@@ -30,10 +30,10 @@ void MotorManager::Process()
 
 void MotorManager::SetThrottle(Motor motor, float throttle)
 {
-	this->throttle[motor] = max(throttle, 1000.F);
+	this->throttle[motor] = max(throttle, THROTTLE_OFF);
 
 #ifdef MEASUREMENT_MODE
-	this->throttle[motor] = min(throttle, 1180.F);
+	this->throttle[motor] = min(this->throttle[motor], 1180.F);
 #endif
 }
 

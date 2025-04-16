@@ -25,9 +25,12 @@ public:
 	void SetThrottle(const float throttle[MOT_NoOf]);
 
 private:
+	static constexpr auto THROTTLE_OFF = 1000.F;
+
+private:
 	uint16_t escFreqHz;
 	uint8_t outputPins[MOT_NoOf];
-	float throttle[MOT_NoOf] = { 0.F };
+	float throttle[MOT_NoOf] = { THROTTLE_OFF };
 };
 
 #endif /* MOTOR_MANAGER_H_ */
