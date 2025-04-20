@@ -3,7 +3,8 @@
 
 class Mpu6050 {
 public:
-	Mpu6050(const uint8_t busId);
+	Mpu6050(const uint8_t busId, float accelOffsetX, float accelOffsetY,
+			float accelOffsetZ);
 
 	void Init();
 	void Process();
@@ -47,9 +48,13 @@ private:
 	float angleRoll = 0.F;
 	float anglePitch = 0.F;
 
-	float calibrationOffsetRoll = 0.F;
-	float calibrationOffsetPitch = 0.F;
-	float calibrationOffsetYaw = 0.F;
+	float calibrationOffsetGyroRoll = 0.F;
+	float calibrationOffsetGyroPitch = 0.F;
+	float calibrationOffsetGyroYaw = 0.F;
+
+	float calibrationOffsetAccelX = 0.F;
+	float calibrationOffsetAccelY = 0.F;
+	float calibrationOffsetAccelZ = 0.F;
 };
 
 #endif /* MPU6050_H_ */

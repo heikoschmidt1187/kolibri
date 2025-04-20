@@ -3,8 +3,12 @@
 
 #include "Mpu6050.h"
 
-Mpu6050::Mpu6050(const uint8_t busId)
+Mpu6050::Mpu6050(const uint8_t busId, float accelOffsetX, float accelOffsetY,
+				 float accelOffsetZ)
 	: busId(busId)
+	, calibrationOffsetAccelX(accelOffsetX)
+	, calibrationOffsetAccelY(accelOffsetY)
+	, calibrationOffsetAccelZ(accelOffsetZ)
 {
 }
 
@@ -50,18 +54,22 @@ void Mpu6050::Init()
 		delay(1U);
 	}
 
-	calibrationOffsetRoll = offsetRoll / CALIBRATION_MEASURMENTS;
-	calibrationOffsetPitch = offsetPitch / CALIBRATION_MEASURMENTS;
-	calibrationOffsetYaw = offsetYaw / CALIBRATION_MEASURMENTS;
+	calibrationOffsetGyroRoll = offsetRoll / CALIBRATION_MEASURMENTS;
+	calibrationOffsetGyroPitch = offsetPitch / CALIBRATION_MEASURMENTS;
+	calibrationOffsetGyroYaw = offsetYaw / CALIBRATION_MEASURMENTS;
 
 	// correct last measurement
-	rateRoll -= calibrationOffsetRoll;
-	ratePitch -= calibrationOffsetPitch;
-	rateYaw -= calibrationOffsetYaw;
+	rateRoll -= calibrationOffsetGyroRoll;
+	ratePitch -= calibrationOffsetGyroPitch;
+	rateYaw -= calibrationOffsetGyroYaw;
 
 	Serial.printf(
 		"Gyro calibration offsets = Roll: %f °/s | Pitch: %f °/s | Yaw: %f °/s\n",
-		calibrationOffsetRoll, calibrationOffsetPitch, calibrationOffsetYaw);
+		calibrationOffsetGyroRoll, calibrationOffsetGyroPitch,
+		calibrationOffsetGyroYaw);
+	Serial.printf("Accel calibration offsets = X: %f g | Y: %f g | Z: %f g\n",
+				  calibrationOffsetAccelX, calibrationOffsetAccelY,
+				  calibrationOffsetAccelZ);
 }
 
 void Mpu6050::Process()
@@ -77,9 +85,9 @@ void Mpu6050::Process()
 	int16_t gyroY = (Wire.read() << 8U) | Wire.read();
 	int16_t gyroZ = (Wire.read() << 8U) | Wire.read();
 
-	rateRoll = ((float)gyroX / SCALE_GYRO) - calibrationOffsetRoll;
-	ratePitch = ((float)gyroY / SCALE_GYRO) - calibrationOffsetPitch;
-	rateYaw = ((float)gyroZ / SCALE_GYRO) - calibrationOffsetYaw;
+	rateRoll = ((float)gyroX / SCALE_GYRO) - calibrationOffsetGyroRoll;
+	ratePitch = ((float)gyroY / SCALE_GYRO) - calibrationOffsetGyroPitch;
+	rateYaw = ((float)gyroZ / SCALE_GYRO) - calibrationOffsetGyroYaw;
 
 	// read accel 6 byte starting from AccX
 	Wire.beginTransmission(busId);
@@ -88,12 +96,18 @@ void Mpu6050::Process()
 
 	Wire.requestFrom(busId, 6U);
 
-	float accX = (float)((Wire.read() << 8) | Wire.read()) / SCALE_ACCEL;
-	float accY = (float)((Wire.read() << 8) | Wire.read()) / SCALE_ACCEL;
-	float accZ = (float)((Wire.read() << 8) | Wire.read()) / SCALE_ACCEL;
+	float accX =
+		((float)((int16_t)((Wire.read() << 8) | Wire.read())) / SCALE_ACCEL) -
+		calibrationOffsetAccelX;
+	float accY =
+		((float)((int16_t)((Wire.read() << 8) | Wire.read())) / SCALE_ACCEL) -
+		calibrationOffsetAccelY;
+	float accZ =
+		((float)((int16_t)((Wire.read() << 8) | Wire.read())) / SCALE_ACCEL) -
+		calibrationOffsetAccelZ;
 
 	float accZ2 = pow(accZ, 2.F);
 
-	angleRoll = atan(accY / sqrt(pow(accX, 2.F) + accZ2)) * 180.F / M_1_PI;
-	anglePitch = -atan(accX / sqrt(pow(accY, 2.F) + accZ2)) * 180.F / M_1_PI;
+	angleRoll = atan(accY / sqrt(pow(accX, 2.F) + accZ2)) * 180.F / M_PI;
+	anglePitch = -atan(accX / sqrt(pow(accY, 2.F) + accZ2)) * 180.F / M_PI;
 }
