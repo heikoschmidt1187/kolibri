@@ -6,6 +6,7 @@
 #include <Receiver.h>
 #include <MotorManager.h>
 #include <RateController.h>
+#include <AttitudeEstimator.h>
 
 #include <DroneConfig.h>
 

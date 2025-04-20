@@ -44,5 +44,5 @@ void MotorManager::SetThrottle(Motor motor, float throttle)
 void MotorManager::SetThrottle(const float throttle[MOT_NoOf])
 {
 	for (auto i = 0U; i < MOT_NoOf; ++i)
-		SetThrottle(i, throttle[i]);
+		SetThrottle((Motor)i, throttle[i]);
 }
