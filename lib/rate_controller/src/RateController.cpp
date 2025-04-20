@@ -11,7 +11,7 @@ void RateController::Init()
 {
 }
 
-void RateController::Process(Gyroscope &gyro, MotorManager &motorManager,
+void RateController::Process(Mpu6050 &mpu6050, MotorManager &motorManager,
 							 float throttleReq, const float rollReq,
 							 const float pitchReq, const float yawReq)
 {
@@ -21,9 +21,9 @@ void RateController::Process(Gyroscope &gyro, MotorManager &motorManager,
 	float yawRate = ReqInputToRotationRate(yawReq);
 
 	// determine error according to gyro measurements
-	float errorRollRate = rollRate - gyro.GetRollRate();
-	float errorPitchRate = pitchRate - gyro.GetPitchRate();
-	float errorYawRate = yawRate - gyro.GetYawRate();
+	float errorRollRate = rollRate - mpu6050.GetRollRate();
+	float errorPitchRate = pitchRate - mpu6050.GetPitchRate();
+	float errorYawRate = yawRate - mpu6050.GetYawRate();
 
 	// limit the throttle to 80 % in order to have room for controller
 	float throttle =

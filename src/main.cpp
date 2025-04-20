@@ -2,7 +2,7 @@
 #include <Wire.h>
 
 #include <BatteryMonitor.h>
-#include <Gyroscope.h>
+#include <Mpu6050.h>
 #include <Receiver.h>
 #include <MotorManager.h>
 #include <RateController.h>
@@ -16,7 +16,7 @@ BatteryMonitor batteryMonitor(BATTERY_VOLTAGE_INPUT_PIN,
 							  BATTERY_CURRENT_DIVIDER_RATIO,
 							  (float)CYCLE_TIME_MS / 1000.F);
 
-Gyroscope gyroscope(MCP6050_BUS_ID);
+Mpu6050 mpu6050(MCP6050_BUS_ID);
 Receiver receiver(RECEIVER_PIN);
 MotorManager motorManager(ESC_INPUT_FREQ_HZ, MOTOR_FR_PIN, MOTOR_RR_PIN,
 						  MOTOR_RL_PIN, MOTOR_FL_PIN);
@@ -117,7 +117,7 @@ void HandleRateController()
 		yawReq = RateController::USER_INPUT_MID;
 	}
 
-	rateController.Process(gyroscope, motorManager, throttleReq, rollReq,
+	rateController.Process(mpu6050, motorManager, throttleReq, rollReq,
 						   pitchReq, yawReq);
 }
 
@@ -144,7 +144,7 @@ void setup()
 	delay(250U);
 
 	// init gyro
-	gyroscope.Init();
+	mpu6050.Init();
 
 	// init receiver
 	receiver.Init();
@@ -175,7 +175,7 @@ void loop()
 
 	// get system input
 	receiver.Process();
-	gyroscope.Process();
+	mpu6050.Process();
 
 	// logic depends on controller
 	HandleRateController();

@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#include <Gyroscope.h>
+#include <Mpu6050.h>
 #include <MotorManager.h>
 #include <PidController.h>
 
@@ -12,8 +12,9 @@ public:
 	RateController(const float dt);
 
 	void Init();
-	void Process(Gyroscope &gyro, MotorManager &motorManager, float throttleReq,
-				 const float rollReq, const float pitchReq, const float yawReq);
+	void Process(Mpu6050 &mpu6050, MotorManager &motorManager,
+				 float throttleReq, const float rollReq, const float pitchReq,
+				 const float yawReq);
 	float ReqInputToRotationRate(const float input);
 
 public:

@@ -1,31 +1,37 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-#include "Gyroscope.h"
+#include "Mpu6050.h"
 
-Gyroscope::Gyroscope(const uint8_t busId)
+Mpu6050::Mpu6050(const uint8_t busId)
 	: busId(busId)
 {
 }
 
-void Gyroscope::Init()
+void Mpu6050::Init()
 {
-	// power up Gyro
+	// power up chip
 	Wire.beginTransmission(busId);
 	Wire.write(0x6BU);
 	Wire.write(0x00U);
 	Wire.endTransmission();
 
-	//switch low pass filter to 10 Hz bandwith
+	// switch low pass filter to 10 Hz bandwith
 	Wire.beginTransmission(busId);
 	Wire.write(0x1AU);
 	Wire.write(0x05AU);
 	Wire.endTransmission();
 
-	// configure the Gyro full range to 500 °/s with LSB scale 65.5 LSB / °/s
+	// configure the gyro full range to 500 °/s with LSB scale 65.5 LSB / °/s
 	Wire.beginTransmission(busId);
 	Wire.write(0x1BU);
 	Wire.write(0x08U);
+	Wire.endTransmission();
+
+	// configure the accel full range to +/- 8g with LSB scale 4096 LSB / g
+	Wire.beginTransmission(busId);
+	Wire.write(0x1CU);
+	Wire.write(0x10U);
 	Wire.endTransmission();
 
 	// calibrate the offsets by taking a large number of measurements and take
@@ -58,9 +64,9 @@ void Gyroscope::Init()
 		calibrationOffsetRoll, calibrationOffsetPitch, calibrationOffsetYaw);
 }
 
-void Gyroscope::Process()
+void Mpu6050::Process()
 {
-	// read 6 byte starting from roll rate register
+	// read gyro 6 byte starting from roll rate register
 	Wire.beginTransmission(busId);
 	Wire.write(0x43);
 	Wire.endTransmission();
@@ -71,9 +77,23 @@ void Gyroscope::Process()
 	int16_t gyroY = (Wire.read() << 8U) | Wire.read();
 	int16_t gyroZ = (Wire.read() << 8U) | Wire.read();
 
-	rateRoll = ((float)gyroX / SCALE) - calibrationOffsetRoll;
-	ratePitch = ((float)gyroY / SCALE) - calibrationOffsetPitch;
-	rateYaw = ((float)gyroZ / SCALE) - calibrationOffsetYaw;
+	rateRoll = ((float)gyroX / SCALE_GYRO) - calibrationOffsetRoll;
+	ratePitch = ((float)gyroY / SCALE_GYRO) - calibrationOffsetPitch;
+	rateYaw = ((float)gyroZ / SCALE_GYRO) - calibrationOffsetYaw;
 
-	Serial.printf("Gyro raw: R %f P %f Y %f\n", rateRoll, ratePitch, rateYaw);
+	// read accel 6 byte starting from AccX
+	Wire.beginTransmission(busId);
+	Wire.write(0x3B);
+	Wire.endTransmission();
+
+	Wire.requestFrom(busId, 6U);
+
+	float accX = (float)((Wire.read() << 8) | Wire.read()) / SCALE_ACCEL;
+	float accY = (float)((Wire.read() << 8) | Wire.read()) / SCALE_ACCEL;
+	float accZ = (float)((Wire.read() << 8) | Wire.read()) / SCALE_ACCEL;
+
+	float accZ2 = pow(accZ, 2.F);
+
+	angleRoll = atan(accY / sqrt(pow(accX, 2.F) + accZ2)) * 180.F / M_1_PI;
+	anglePitch = -atan(accX / sqrt(pow(accY, 2.F) + accZ2)) * 180.F / M_1_PI;
 }
