@@ -7,7 +7,7 @@
 #define CYCLE_TIME_MS 4U
 #define CYCLE_TIME_US (CYCLE_TIME_MS * 1000U)
 
-#define MEASUREMENT_MODE
+//#define MEASUREMENT_MODE
 
 // on-board LEDs
 #define INTERNAL_LED_GPIO 13U
