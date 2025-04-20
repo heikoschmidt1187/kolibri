@@ -24,7 +24,9 @@ void MotorManager::Init()
 
 void MotorManager::Process()
 {
+#ifdef MEASUREMENT_MODE
 	Serial.printf("Throttle: %f\n ", throttle[0]);
+#endif
 
 	for (auto i = 0U; i < MOT_NoOf; ++i)
 		analogWrite(outputPins[i], (int)(1.024F * throttle[i]));
