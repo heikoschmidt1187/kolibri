@@ -6,6 +6,7 @@
 #include <Receiver.h>
 #include <MotorManager.h>
 #include <RateController.h>
+#include <AttitudeEstimator.h>
 
 #include <DroneConfig.h>
 
@@ -23,6 +24,7 @@ Mpu6050 mpu6050(MCP6050_BUS_ID, ACCELEROMETER_CALIBRATION_OFFSET_X,
 Receiver receiver(RECEIVER_PIN);
 MotorManager motorManager(ESC_INPUT_FREQ_HZ, MOTOR_FR_PIN, MOTOR_RR_PIN,
 						  MOTOR_RL_PIN, MOTOR_FL_PIN);
+AttitudeEstimator attitudeEstimator(4.F, 2.F, (float)CYCLE_TIME_MS / 1000.F);
 
 RateController rateController((float)CYCLE_TIME_MS / 1000.F);
 
@@ -179,6 +181,13 @@ void loop()
 	// get system input
 	receiver.Process();
 	mpu6050.Process();
+
+	// process attitude
+	attitudeEstimator.Process(mpu6050.GetRollRate(), mpu6050.GetRollAngle(),
+							  mpu6050.GetPitchRate(), mpu6050.GetPitchAngle());
+
+	Serial.printf("Estimated angles: P %f | R %f\n",
+				  attitudeEstimator.GetPitch(), attitudeEstimator.GetRoll());
 
 	// logic depends on controller
 	HandleRateController();
