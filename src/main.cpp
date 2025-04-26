@@ -7,6 +7,7 @@
 #include <MotorManager.h>
 #include <RateController.h>
 #include <AttitudeEstimator.h>
+#include <AngleController.h>
 
 #include <DroneConfig.h>
 
@@ -27,6 +28,7 @@ MotorManager motorManager(ESC_INPUT_FREQ_HZ, MOTOR_FR_PIN, MOTOR_RR_PIN,
 AttitudeEstimator attitudeEstimator(4.F, 2.F, (float)CYCLE_TIME_MS / 1000.F);
 
 RateController rateController((float)CYCLE_TIME_MS / 1000.F);
+AngleController angleController((float)CYCLE_TIME_MS / 1000.F);
 
 // battery level handling
 static uint16_t batteryLowBlinkCtr = 0U;
@@ -58,7 +60,9 @@ void HandleBattery()
 	}
 }
 
-void HandleRateController()
+// TODO: refactor drone modes to reduce duplicate code
+
+void HandleRateMode()
 {
 	// determine user inputs with throttle safety
 	static float throttleReq = 0.F;
@@ -126,6 +130,77 @@ void HandleRateController()
 						   pitchReq, yawReq);
 }
 
+void HandleStabilizeMode()
+{
+	// determine user inputs with throttle safety
+	static float throttleReq = 0.F;
+
+	static float rollReq = 0.F;
+	static float pitchReq = 0.F;
+	static float yawReq = 0.F;
+
+	static bool loggedReceiverFallback = false;
+	static bool emergencyRoutineActivated = false;
+
+	if (receiver.GetActualChannelCount() >= 8) {
+		auto throttle = receiver.GetChannelValue(CHANNEL_THROTTLE);
+
+		// wait until the throttle stick has been moved around it's lower position
+		// to avoid unintended rotor movement
+		if (!validThrottleCommandSeen && (throttle > 1020.F) &&
+			(throttle < 1050.F))
+			validThrottleCommandSeen = true;
+
+		throttleReq = validThrottleCommandSeen ? throttle : 0.F;
+
+		rollReq = receiver.GetChannelValue(CHANNEL_ROLL);
+		pitchReq = receiver.GetChannelValue(CHANNEL_PITCH);
+		yawReq = receiver.GetChannelValue(CHANNEL_YAW);
+
+		// check the emergency switch
+		auto emergencyInput =
+			receiver.GetChannelValue(CHANNEL_SWITCH_EMERGENCY);
+
+		if ((emergencyInput > RateController::USER_INPUT_MID) &&
+			!emergencyRoutineActivated) {
+			Serial.printf("Connection lost, emergency activated!\n");
+			emergencyRoutineActivated = true;
+		}
+
+		lastReceiverTimestamp = micros();
+		loggedReceiverFallback = false;
+
+	} else if (validThrottleCommandSeen) {
+		// TODO: lost receiver during flight
+		// for now: keep turning at idle and hope the best
+		if (validThrottleCommandSeen &&
+			(micros() - lastReceiverTimestamp > RECVR_DISCONNECT_TIMEOUT_US)) {
+			if (!loggedReceiverFallback) {
+				Serial.printf("Receiver failed, fallback activated!\n");
+				loggedReceiverFallback = true;
+			}
+		} else {
+			loggedReceiverFallback = false;
+		}
+	} else {
+		// nothing to do, wait for commands
+	}
+
+	// handle emergency
+	if (emergencyRoutineActivated || loggedReceiverFallback) {
+		throttleReq = RateController::USER_THROTTLE_IDLE;
+		rollReq = RateController::USER_INPUT_MID;
+		pitchReq = RateController::USER_INPUT_MID;
+		yawReq = RateController::USER_INPUT_MID;
+	}
+
+	angleController.Process(attitudeEstimator, rollReq, pitchReq);
+	rateController.ProcessDirectRollPitch(mpu6050, motorManager, throttleReq,
+										  angleController.GetRollRate(),
+										  angleController.GetPitchRate(),
+										  yawReq);
+}
+
 void setup()
 {
 	// configure serial monitor
@@ -161,6 +236,12 @@ void setup()
 	// init motor manager
 	motorManager.Init();
 
+	// init attitude estimator
+	attitudeEstimator.Init();
+
+	// init angle controller
+	angleController.Init();
+
 	// init rate controller
 	rateController.Init();
 
@@ -186,11 +267,22 @@ void loop()
 	attitudeEstimator.Process(mpu6050.GetRollRate(), mpu6050.GetRollAngle(),
 							  mpu6050.GetPitchRate(), mpu6050.GetPitchAngle());
 
-	Serial.printf("Estimated angles: P %f | R %f\n",
-				  attitudeEstimator.GetPitch(), attitudeEstimator.GetRoll());
+	// logic depends on mode
+	switch (OPERATION_MODE) {
+	case OM_Rate:
+		HandleRateMode();
+		break;
 
-	// logic depends on controller
-	HandleRateController();
+	case OM_Stabilize:
+		HandleStabilizeMode();
+		break;
+
+	case OM_Velocity:
+		break;
+
+	default:
+		Serial.println("ERROR: UNKNOWN OPERATION MODE");
+	}
 
 	// set actuators
 	motorManager.Process();

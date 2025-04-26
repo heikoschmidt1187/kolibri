@@ -18,6 +18,15 @@ void RateController::Process(Mpu6050 &mpu6050, MotorManager &motorManager,
 	// transform the user input into rotation rates, limit them for easier control
 	float rollRate = ReqInputToRotationRate(rollReq);
 	float pitchRate = ReqInputToRotationRate(pitchReq);
+
+	ProcessDirectRollPitch(mpu6050, motorManager, throttleReq, rollRate,
+						   pitchRate, yawReq);
+}
+
+void RateController::ProcessDirectRollPitch(
+	Mpu6050 &mpu6050, MotorManager &motorManager, float throttleReq,
+	const float rollRate, const float pitchRate, const float yawReq)
+{
 	float yawRate = ReqInputToRotationRate(yawReq);
 
 	// determine error according to gyro measurements

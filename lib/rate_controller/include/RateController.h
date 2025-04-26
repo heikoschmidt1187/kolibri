@@ -15,6 +15,9 @@ public:
 	void Process(Mpu6050 &mpu6050, MotorManager &motorManager,
 				 float throttleReq, const float rollReq, const float pitchReq,
 				 const float yawReq);
+	void ProcessDirectRollPitch(Mpu6050 &mpu6050, MotorManager &motorManager,
+								float throttleReq, const float rollRate,
+								const float pitchRate, const float yawReq);
 	float ReqInputToRotationRate(const float input);
 
 public:

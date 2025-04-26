@@ -28,15 +28,25 @@ void MotorManager::Process()
 	Serial.printf("Throttle: %f\n ", throttle[0]);
 #endif
 
-	for (auto i = 0U; i < MOT_NoOf; ++i)
+	for (auto i = 0U; i < MOT_NoOf; ++i) {
+#ifdef MEASUREMENT_MODE
+		Serial.printf("Motor %d: %f | ", i, throttle[i]);
+#endif
+
+#if !defined(MEASUREMENT_MODE) || !defined(MEASUREMENT_NO_MOTOR_OUTPUT)
 		analogWrite(outputPins[i], (int)(1.024F * throttle[i]));
+#endif
+	}
+#ifdef MEASUREMENT_MODE
+	Serial.printf("\n");
+#endif
 }
 
 void MotorManager::SetThrottle(Motor motor, float throttle)
 {
 	this->throttle[motor] = max(throttle, THROTTLE_OFF);
 
-#ifdef MEASUREMENT_MODE
+#if defined(MEASUREMENT_MODE) && defined(MEASUREMENT_LIMIT_THROTTLE)
 	this->throttle[motor] = min(this->throttle[motor], 1180.F);
 #endif
 }

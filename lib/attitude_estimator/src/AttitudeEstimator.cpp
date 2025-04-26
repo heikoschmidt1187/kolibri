@@ -1,4 +1,5 @@
 #include <AttitudeEstimator.h>
+#include <DroneConfig.h>
 
 AttitudeEstimator::AttitudeEstimator(const float stdARate,
 									 const float stdAAngle, const float dt)
@@ -41,4 +42,10 @@ void AttitudeEstimator::Process(const float rollRate, const float rollAngle,
 	// update uncertainties
 	uncertaintyRoll = (1 - gainRoll) * uncertaintyRoll;
 	uncertaintyPitch = (1 - gainPitch) * uncertaintyPitch;
+
+#ifdef MEASUREMENT_MODE
+	Serial.printf(
+		"AttitudeEstimator: Roll %f ° | UncertRoll %f | Pitch %f ° | UncertPitch %f\n",
+		currentRoll, uncertaintyRoll, currentPitch, uncertaintyPitch);
+#endif
 }

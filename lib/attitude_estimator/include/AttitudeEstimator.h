@@ -11,12 +11,12 @@ public:
 	void Process(const float rollRate, const float rollAngle,
 				 const float pitchRate, const float pitchAngle);
 
-	float GetRoll()
+	float GetRoll() const
 	{
 		return currentRoll;
 	}
 
-	float GetPitch()
+	float GetPitch() const
 	{
 		return currentPitch;
 	}

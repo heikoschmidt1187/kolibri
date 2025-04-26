@@ -8,6 +8,8 @@
 #define CYCLE_TIME_US (CYCLE_TIME_MS * 1000U)
 
 //#define MEASUREMENT_MODE
+//#define MEASUREMENT_NO_MOTOR_OUTPUT
+//#define MEASUREMENT_LIMIT_THROTTLE
 
 // on-board LEDs
 #define INTERNAL_LED_GPIO 13U
@@ -56,5 +58,14 @@
 #define ACCELEROMETER_CALIBRATION_OFFSET_X 0.04F
 #define ACCELEROMETER_CALIBRATION_OFFSET_Y 0.01F
 #define ACCELEROMETER_CALIBRATION_OFFSET_Z -0.05F
+
+// Operation Modes
+enum OperationMode
+{
+	OM_Rate,
+	OM_Stabilize,
+	OM_Velocity
+};
+const OperationMode OPERATION_MODE = OM_Stabilize;
 
 #endif /* CONFIG_H_ */
