@@ -14,10 +14,11 @@ public:
 	void Init();
 	void Process(Mpu6050 &mpu6050, MotorManager &motorManager,
 				 float throttleReq, const float rollReq, const float pitchReq,
-				 const float yawReq);
+				 const float yawReq, const bool emergencyActive);
 	void ProcessDirectRollPitch(Mpu6050 &mpu6050, MotorManager &motorManager,
 								float throttleReq, const float rollRate,
-								const float pitchRate, const float yawReq);
+								const float pitchRate, const float yawReq,
+								const bool emergencyActive);
 	float ReqInputToRotationRate(const float input);
 
 public:

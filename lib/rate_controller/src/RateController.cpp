@@ -1,8 +1,14 @@
 #include <RateController.h>
 
 RateController::RateController(const float dt)
-	: pidRoll(PidController::Config{ .Kp = 0.6F, .Ki = 3.5F, .Kd = 0.03F }, dt)
-	, pidPitch(PidController::Config{ .Kp = 0.6F, .Ki = 3.5F, .Kd = 0.03F }, dt)
+	//: pidRoll(PidController::Config{ .Kp = 0.6F, .Ki = 3.5F, .Kd = 0.03F }, dt)
+	//, pidPitch(PidController::Config{ .Kp = 0.6F, .Ki = 3.5F, .Kd = 0.03F }, dt)
+	//, pidYaw(PidController::Config{ .Kp = 2.F, .Ki = 12.F, .Kd = 0.F }, dt)
+	// 1.4 ok, 1.6 stabiler, 2.0 noch ok?
+	// 2.0 drohne schwingt sich auf
+	: pidRoll(PidController::Config{ .Kp = 1.6F, .Ki = 0.02F, .Kd = 0.05F }, dt)
+	, pidPitch(PidController::Config{ .Kp = 1.6F, .Ki = 0.02F, .Kd = 0.05F },
+			   dt)
 	, pidYaw(PidController::Config{ .Kp = 2.F, .Ki = 12.F, .Kd = 0.F }, dt)
 {
 }
@@ -13,19 +19,21 @@ void RateController::Init()
 
 void RateController::Process(Mpu6050 &mpu6050, MotorManager &motorManager,
 							 float throttleReq, const float rollReq,
-							 const float pitchReq, const float yawReq)
+							 const float pitchReq, const float yawReq,
+							 const bool emergencyActive)
 {
 	// transform the user input into rotation rates, limit them for easier control
 	float rollRate = ReqInputToRotationRate(rollReq);
 	float pitchRate = ReqInputToRotationRate(pitchReq);
 
 	ProcessDirectRollPitch(mpu6050, motorManager, throttleReq, rollRate,
-						   pitchRate, yawReq);
+						   pitchRate, yawReq, emergencyActive);
 }
 
 void RateController::ProcessDirectRollPitch(
 	Mpu6050 &mpu6050, MotorManager &motorManager, float throttleReq,
-	const float rollRate, const float pitchRate, const float yawReq)
+	const float rollRate, const float pitchRate, const float yawReq,
+	const bool emergencyActive)
 {
 	float yawRate = ReqInputToRotationRate(yawReq);
 
@@ -47,11 +55,14 @@ void RateController::ProcessDirectRollPitch(
 	// set motor requests
 	float throttles[MotorManager::MOT_NoOf];
 
+	// for now, on emergency we clamp the throttle in order to never increse height or
+	// fly away
+
 	/* clang-format off */
-	throttles[MotorManager::MOT_FR] = throttle - inputRoll - inputPitch - inputYaw;
-	throttles[MotorManager::MOT_RR] = throttle - inputRoll + inputPitch + inputYaw;
-	throttles[MotorManager::MOT_RL] = throttle + inputRoll + inputPitch + inputYaw;
-	throttles[MotorManager::MOT_FL] = throttle + inputRoll - inputPitch + inputYaw;
+	throttles[MotorManager::MOT_FR] = !emergencyActive ? throttle - inputRoll - inputPitch - inputYaw : USER_THROTTLE_IDLE;
+	throttles[MotorManager::MOT_RR] = !emergencyActive ? throttle - inputRoll + inputPitch + inputYaw : USER_THROTTLE_IDLE;
+	throttles[MotorManager::MOT_RL] = !emergencyActive ? throttle + inputRoll + inputPitch + inputYaw : USER_THROTTLE_IDLE;
+	throttles[MotorManager::MOT_FL] = !emergencyActive ? throttle + inputRoll - inputPitch + inputYaw : USER_THROTTLE_IDLE;
 	/* clang-format on */
 
 	for (auto i = 0U; i < MotorManager::MOT_NoOf; ++i) {

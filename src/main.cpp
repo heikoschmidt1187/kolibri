@@ -120,14 +120,16 @@ void HandleRateMode()
 
 	// handle emergency
 	if (emergencyRoutineActivated || loggedReceiverFallback) {
-		throttleReq = RateController::USER_THROTTLE_IDLE;
+		//throttleReq = RateController::USER_THROTTLE_IDLE;
+		throttleReq = RateController::LOWER_USER_INPUT;
 		rollReq = RateController::USER_INPUT_MID;
 		pitchReq = RateController::USER_INPUT_MID;
 		yawReq = RateController::USER_INPUT_MID;
 	}
 
 	rateController.Process(mpu6050, motorManager, throttleReq, rollReq,
-						   pitchReq, yawReq);
+						   pitchReq, yawReq,
+						   emergencyRoutineActivated || loggedReceiverFallback);
 }
 
 void HandleStabilizeMode()
@@ -188,17 +190,18 @@ void HandleStabilizeMode()
 
 	// handle emergency
 	if (emergencyRoutineActivated || loggedReceiverFallback) {
-		throttleReq = RateController::USER_THROTTLE_IDLE;
+		//throttleReq = RateController::USER_THROTTLE_IDLE;
+		throttleReq = RateController::LOWER_USER_INPUT;
 		rollReq = RateController::USER_INPUT_MID;
 		pitchReq = RateController::USER_INPUT_MID;
 		yawReq = RateController::USER_INPUT_MID;
 	}
 
 	angleController.Process(attitudeEstimator, rollReq, pitchReq);
-	rateController.ProcessDirectRollPitch(mpu6050, motorManager, throttleReq,
-										  angleController.GetRollRate(),
-										  angleController.GetPitchRate(),
-										  yawReq);
+	rateController.ProcessDirectRollPitch(
+		mpu6050, motorManager, throttleReq, angleController.GetRollRate(),
+		angleController.GetPitchRate(), yawReq,
+		emergencyRoutineActivated || loggedReceiverFallback);
 }
 
 void setup()
