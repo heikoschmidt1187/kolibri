@@ -6,9 +6,11 @@ RateController::RateController(const float dt)
 	//, pidYaw(PidController::Config{ .Kp = 2.F, .Ki = 12.F, .Kd = 0.F }, dt)
 	// 1.4 ok, 1.6 stabiler, 2.0 noch ok?
 	// 2.0 drohne schwingt sich auf
-	: pidRoll(PidController::Config{ .Kp = 1.6F, .Ki = 0.02F, .Kd = 0.05F }, dt)
-	, pidPitch(PidController::Config{ .Kp = 1.6F, .Ki = 0.02F, .Kd = 0.05F },
-			   dt)
+	: pidRoll(PidController::Config{ .Kp = 1.2F, .Ki = 4.0F, .Kd = 0.03F },
+			  dt) // D 0.05?
+	, pidPitch(PidController::Config{ .Kp = 1.2F, .Ki = 4.0F, .Kd = 0.03F },
+			   dt) // D 0.05
+	//, pidYaw(PidController::Config{ .Kp = 2.F, .Ki = 12.F, .Kd = 0.F }, dt)
 	, pidYaw(PidController::Config{ .Kp = 2.F, .Ki = 12.F, .Kd = 0.F }, dt)
 {
 }

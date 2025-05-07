@@ -66,6 +66,6 @@ enum OperationMode
 	OM_Stabilize,
 	OM_Velocity
 };
-const OperationMode OPERATION_MODE = OM_Rate;
+const OperationMode OPERATION_MODE = OM_Stabilize;
 
 #endif /* CONFIG_H_ */
